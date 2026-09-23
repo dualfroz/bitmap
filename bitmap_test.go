@@ -130,6 +130,25 @@ func BenchmarkMany(b *testing.B) {
 	run(b, "and4-batch", func(index Bitmap) {
 		index.And(other, other, other, other)
 	})
+
+	run(b, "or4-batch", func(index Bitmap) {
+		index.Or(other, other, other, other)
+	})
+
+	run(b, "xor4-batch", func(index Bitmap) {
+		index.Xor(other, other, other, other)
+	})
+
+	shorter := make(Bitmap, 1000000/64/2)
+	shorter.Set(1000000 / 2)
+
+	run(b, "or4-batch-ragged", func(index Bitmap) {
+		index.Or(other, other, shorter, other)
+	})
+
+	run(b, "xor4-batch-ragged", func(index Bitmap) {
+		index.Xor(other, other, shorter, other)
+	})
 }
 
 func TestSetRemove(t *testing.T) {

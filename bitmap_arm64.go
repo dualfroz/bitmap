@@ -67,15 +67,13 @@ func (dst *Bitmap) Or(other Bitmap, extra ...Bitmap) {
 		case 0:
 			_or(unsafe.Pointer(&(*dst)[0]), unsafe.Pointer(&other[0]), uint64(len(other)))
 		default:
-			// _or_many uses one word count for every input, so it cannot union
-			// bitmaps of different lengths. Union each source over its own.
-			if len(other) > 0 {
-				_or(unsafe.Pointer(&(*dst)[0]), unsafe.Pointer(&other[0]), uint64(len(other)))
-			}
-			for i := range extra {
-				if len(extra[i]) > 0 {
-					_or(unsafe.Pointer(&(*dst)[0]), unsafe.Pointer(&extra[i][0]), uint64(len(extra[i])))
-				}
+			// _or_many applies one word count to every input, so it only fits
+			// sources that share a length; ragged ones are folded in one by one.
+			if n := uniformLen(other, extra); n > 0 {
+				vx, _ := pointersOf(other, extra)
+				_or_many(unsafe.Pointer(&(*dst)[0]), vx, dimensionsOf(n, len(extra)+1))
+			} else {
+				foldEach(dst, _or, other, extra)
 			}
 		}
 	default:
@@ -97,15 +95,13 @@ func (dst *Bitmap) Xor(other Bitmap, extra ...Bitmap) {
 		case 0:
 			_xor(unsafe.Pointer(&(*dst)[0]), unsafe.Pointer(&other[0]), uint64(len(other)))
 		default:
-			// _xor_many uses one word count for every input, so it cannot combine
-			// bitmaps of different lengths. Fold in each source over its own.
-			if len(other) > 0 {
-				_xor(unsafe.Pointer(&(*dst)[0]), unsafe.Pointer(&other[0]), uint64(len(other)))
-			}
-			for i := range extra {
-				if len(extra[i]) > 0 {
-					_xor(unsafe.Pointer(&(*dst)[0]), unsafe.Pointer(&extra[i][0]), uint64(len(extra[i])))
-				}
+			// _xor_many applies one word count to every input, so it only fits
+			// sources that share a length; ragged ones are folded in one by one.
+			if n := uniformLen(other, extra); n > 0 {
+				vx, _ := pointersOf(other, extra)
+				_xor_many(unsafe.Pointer(&(*dst)[0]), vx, dimensionsOf(n, len(extra)+1))
+			} else {
+				foldEach(dst, _xor, other, extra)
 			}
 		}
 	default:
