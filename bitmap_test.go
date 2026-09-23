@@ -649,7 +649,7 @@ func testTruthTables(t *testing.T) {
 	}
 }
 
-func TestOr_ExtraDifferentBitmapSizes(t *testing.T) {
+func TestOrRaggedSizes(t *testing.T) {
 	// Ragged inputs: every set bit must survive regardless of which is longest.
 	var dst Bitmap
 	dst.Set(1)  // word 0
@@ -665,16 +665,19 @@ func TestOr_ExtraDifferentBitmapSizes(t *testing.T) {
 	var mid Bitmap
 	mid.Set(130) // word 2
 
-	dst.Or(other, short, mid)
+	var long Bitmap
+	long.Set(260) // word 4, beyond other
 
-	want := []uint32{1, 70, 3, 200, 5, 130}
+	dst.Or(other, short, mid, long)
+
+	want := []uint32{1, 70, 3, 200, 5, 130, 260}
 	for _, v := range want {
 		assert.True(t, dst.Contains(v), "missing bit "+strconv.Itoa(int(v)))
 	}
 	assert.Equal(t, len(want), dst.Count())
 }
 
-func TestXor_ExtraDifferentBitmapSizes(t *testing.T) {
+func TestXorRaggedSizes(t *testing.T) {
 	var dst Bitmap
 	dst.Set(1)
 	dst.Set(200) // shared with other, must cancel out
@@ -686,11 +689,15 @@ func TestXor_ExtraDifferentBitmapSizes(t *testing.T) {
 	var short Bitmap
 	short.Set(5)
 
-	dst.Xor(other, short)
+	var long Bitmap
+	long.Set(260) // word 4, beyond other
+
+	dst.Xor(other, short, long)
 
 	assert.True(t, dst.Contains(1))
 	assert.False(t, dst.Contains(200), "bit 200 should cancel")
 	assert.True(t, dst.Contains(201), "bit 201 from longer source must survive")
 	assert.True(t, dst.Contains(5))
-	assert.Equal(t, 3, dst.Count())
+	assert.True(t, dst.Contains(260), "bit 260 from longer extra must survive")
+	assert.Equal(t, 4, dst.Count())
 }
